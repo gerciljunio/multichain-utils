@@ -1,23 +1,9 @@
 {
 	"name": "@adanizecom/multichain-utils",
 	"description": "Utilities for Cardano, Ethereum, BSC, Polygon and Solana blockchain",
-	"version": "1.0.3",
-	"license": "MIT",
-	"scripts": {
-		"build": "rollup -c",
-		"watch": "rollup -cw",
-		"test": "jest",
-		"cz": "git-cz",
-		"lint": "eslint --ext .js src/"
-	},
+	"version": "1.0.4",
 	"main": "src/index.js",
-	"module": "src/index.es.js",
-	"files": [
-		"lib"
-	],
-	"publishConfig": {
-		"access": "public"
-	},
+    "license": "MIT",
 	"dependencies": {
 		"@emurgo/cardano-serialization-lib-asmjs": "^9.1.2",
 		"@emurgo/cardano-serialization-lib-browser": "^9.1.2",
@@ -42,14 +28,5 @@
 		"commitizen": "^4.0.3",
 		"eslint": "^7.7.0",
 		"jest": "^24.9.0",
-		"rollup": "^1.27.5",
-		"rollup-plugin-babel": "^4.3.3",
-		"rollup-plugin-cleanup": "^3.1.1",
-		"rollup-plugin-commonjs": "^10.1.0",
-		"rollup-plugin-delete": "^1.1.0",
-		"rollup-plugin-node-resolve": "^5.2.0",
-		"rollup-plugin-progress": "^1.1.1",
-		"rollup-plugin-terser": "^5.1.2",
-		"semantic-release": "^16.0.0-beta.38"
 	}
 }
