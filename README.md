@@ -1,6 +1,8 @@
 # Multichain Utils
 
-## Documentation for this package is under development.
+## The documentation and package are constantly developing, all information can be found in the link below.
+
+[adanize.com/multichain-utils](https://adanize.com/multichain-utils)
 
 ## Contributing
 
