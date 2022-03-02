@@ -27,6 +27,6 @@
 		"@semantic-release/release-notes-generator": "^7.3.5",
 		"commitizen": "^4.0.3",
 		"eslint": "^7.7.0",
-		"jest": "^24.9.0",
+		"jest": "^24.9.0"
 	}
 }
