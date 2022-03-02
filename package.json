@@ -1,7 +1,7 @@
 {
 	"name": "@adanizecom/multichain-utils",
 	"description": "Utilities for Cardano, Ethereum, BSC, Polygon and Solana blockchain",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"main": "src/index.js",
 	"license": "MIT",
 	"dependencies": {
@@ -32,5 +32,6 @@
 	"repository": {
         "type": "git",
         "url": "git+https://github.com/gerciljunio/multichain-utils"
-    }
+    },
+	"homepage": "https://adanize.com/multichain-utils"
 }
