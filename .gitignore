@@ -17,3 +17,4 @@ lib
 ._requests.js
 
 .DS_Store
+.README.md

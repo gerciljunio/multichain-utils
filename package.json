@@ -1,7 +1,7 @@
 {
 	"name": "@adanizecom/multichain-utils",
 	"description": "Utilities for Cardano, Ethereum, BSC, Polygon and Solana blockchain",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"license": "MIT",
 	"scripts": {
 		"build": "rollup -c",
@@ -10,8 +10,8 @@
 		"cz": "git-cz",
 		"lint": "eslint --ext .js src/"
 	},
-	"main": "lib/index.js",
-	"module": "lib/index.es.js",
+	"main": "src/index.js",
+	"module": "src/index.es.js",
 	"files": [
 		"lib"
 	],
@@ -23,7 +23,7 @@
 		"@emurgo/cardano-serialization-lib-browser": "^9.1.2",
 		"@stricahq/typhonjs": "^1.1.2",
 		"@unstoppabledomains/resolution": "^7.1.4",
-		"adanize-wallet-utils": "git+https://github.com/Adanize/adanize-wallet-utils.git",
+		"adanize-wallet-utils": "^1.0.0",
 		"axios": "^0.26.0",
 		"buffer": "^6.0.3",
 		"dotenv": "^16.0.0",
