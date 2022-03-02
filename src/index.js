@@ -319,10 +319,18 @@ export const detectModelChainByAsset = (addr, ethTarget = null) => {
  * @returns 
  */
 export const addressValidator = (addr, currency, network = null) => {
-    if (WAValidator.validate(addr, currency, network)) {
-        return true;
+    if (network) {
+        if (WAValidator.validate(addr, currency, network)) {
+            return true;
+        } else {
+            return false;
+        }
     } else {
-        return false;
+        if (WAValidator.validate(addr, currency)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

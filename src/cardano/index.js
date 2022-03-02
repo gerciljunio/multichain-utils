@@ -851,6 +851,13 @@ export const walletCardanoNetworkId = async (wallet) => {
     }
 }
 
+/**
+ * Returns network uptime information in % along with a message explaining the current level.
+ */
+export const cardanoHealth = async () => {
+    
+}
+
 export {
     cardanoMakeSimpleTransaction,
     cardanoMakeMultipleTransaction
