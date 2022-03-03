@@ -13,7 +13,8 @@ import {
     koiosRequest,
     blockFrostRequest,
     adaHandleRequest,
-    artAssetRequest
+    artAssetRequest,
+    artRequest
 } from '../requests'
 
 import {
@@ -852,10 +853,12 @@ export const walletCardanoNetworkId = async (wallet) => {
 }
 
 /**
- * Returns network uptime information in % along with a message explaining the current level.
+ * Returns network uptime information in %
+ * @param {object} options 
+ * @returns 
  */
-export const cardanoHealth = async () => {
-    
+export const cardanoHealth = async (options = {}) => {
+    return await artRequest('?art-action=cardano-health', options)
 }
 
 export {
