@@ -146,7 +146,8 @@ export const blockFrostRequest = async (route, options = {}) => {
  * @param {object} options 
  * @returns 
  */
-export const tangoCryptoRequest = async (route, options = {}) => {    
+export const tangoCryptoRequest = async (route, options = {}) => {
+    console.log('to requisitando...')
     let networkSelected = options.network === 0 ? 'testnet' : 'mainnet'
     delete options.network
 
@@ -179,6 +180,8 @@ export const tangoCryptoRequest = async (route, options = {}) => {
             }
         })
     }
+
+    console.log('ja requisitei...', response)
 
     return {
         code: response.code,
@@ -241,16 +244,19 @@ export const adaHandleRequest = async (handle, options = {}) => {
     
     // tangocrypto
     } else if (getTangocryptoId(options)) {
+        
         try {
             response = await tangoCryptoRequest(`assets/${ADAHANDLE_POLICY[getCardanoRequestNetwork(options)]}${handle}/addresses`, {
                 tangocrypto_id: getTangocryptoId(options),
                 tangocrypto_key: getTangocryptoKey(options),
                 network: getCardanoRequestNetwork(options)
             })
+            
             if (response.code == 404) {
                 throw ''
             }
-            return response.data.address
+            
+            return response.data.address || response.data.data.address || response.data.data[0].address
         } catch (error) {
             response = await koiosRequest(`asset_address_list?_asset_policy=${ADAHANDLE_POLICY[getCardanoRequestNetwork(options)]}&_asset_name=${handle}`, {
                 network: getCardanoRequestNetwork(options)
