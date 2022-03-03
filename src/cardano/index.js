@@ -1,5 +1,6 @@
 import * as WAValidator from 'multicoin-address-validator'
 import * as walletUtils from 'adanize-wallet-utils'
+import * as TrezorWAValidator from 'trezor-address-validator'
 
 import {
     MESSAGES,
@@ -33,6 +34,23 @@ export const cardanoAddressFromAdaHandle = async (handle, options = {}) => {
     const {
         onlyAddr = false
     } = options
+
+    // if it is default ADA address
+    if (WAValidator.validate(handle, 'ada')) {
+        return {
+            code: 200,
+            data: handle
+        };
+    }
+
+    // if it is default ADA address testnet
+    if (TrezorWAValidator.validate(handle, 'ada', 'testnet')) {
+        return {
+            code: 200,
+            data: handle
+        };
+    }
+
     if (handle.startsWith('$')) {
         try {
             let asset = convertStringToHex(handle.slice(1))
@@ -112,6 +130,14 @@ export const getAda = async (art, options = {}) => {
         };
     }
 
+    // if it is default ADA address testnet
+    if (TrezorWAValidator.validate(art, 'ada', 'testnet')) {
+        return {
+            code: 200,
+            data: art
+        };
+    }
+
     // If starting with $ is a handle 
     if (art.startsWith('$')) {
         return await cardanoAddressFromAdaHandle(art, options)
@@ -131,6 +157,14 @@ export const cardanoAccountInformation = async (address, options = {}) => {
     const {
         blockfrost_id = null, network = 1, onlyStake = false
     } = options
+
+    let remoteAddress
+    if (!address.startsWith('addr') && !address.startsWith('addr_test') && !address.startsWith('stake')) {
+        remoteAddress = await getAda(address, options)
+        if (remoteAddress.code == 200) {
+            address = remoteAddress.data
+        }
+    }
 
     if (!address.startsWith('stake') && !address.startsWith('addr')) {
         return {
@@ -248,6 +282,14 @@ export const cardanoStakeAddress = async (address, options = {}) => {
         }
     }
 
+    let remoteAddress
+    if (!address.startsWith('addr') && !address.startsWith('addr_test') && !address.startsWith('stake')) {
+        remoteAddress = await getAda(address, options)
+        if (remoteAddress.code == 200) {
+            address = remoteAddress.data
+        }
+    }
+
     let response = await cardanoAccountInformation(address, Object.assign(options, {
         onlyStake: true
     }))
@@ -265,7 +307,16 @@ export const cardanoStakeAddress = async (address, options = {}) => {
  * @returns 
  */
 export const cardanoPoolIdByAddress = async (address, options = {}) => {
-    let response
+    let response, remoteAddress
+
+    if (!address.startsWith('addr') && !address.startsWith('addr_test')) {
+        remoteAddress = await getAda(address, options)
+        if (remoteAddress.code == 200) {
+            address = remoteAddress.data
+        }
+    }
+
+
     try {
         response = await cardanoAccountInformation(address, options)
     } catch (error) {

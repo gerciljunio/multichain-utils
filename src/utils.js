@@ -45,3 +45,15 @@ export const getCardanoRequestNetwork = (options = {}) => {
 export const convertStringToHex = (string) => {
     return Buffer.from(string).toString('hex')
 };
+
+export const isValidHttpUrl = (string) => {
+    let url;
+
+    try {
+        url = new URL(string);
+    } catch (_) {
+        return false;  
+    }
+
+    return url.protocol === "http:" || url.protocol === "https:";
+}

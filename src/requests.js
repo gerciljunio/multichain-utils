@@ -11,6 +11,7 @@ import {
 
 import {
     timerWait,
+    isValidHttpUrl
 } from './utils'
 
 import {
@@ -102,11 +103,32 @@ export const blockFrostRequest = async (route, options = {}) => {
         throw 'blockfrost_id not found'
     }
 
-    let response = await httpGet(`https://cardano-${networkSelected}.blockfrost.io/api/v0/${route}`, {
-        headers: {
-            'project_id' : options.blockfrost_id
-        }
-    })
+    let endpoint_mainnet = `https://cardano-mainnet.blockfrost.io/api/v0`
+    let endpoint_testnet = `https://cardano-testnet.blockfrost.io/api/v0`
+
+    if (typeof(options.cardano_endpoint_mainnet) !== 'undefined' && isValidHttpUrl(options.cardano_endpoint_mainnet)) {
+        endpoint_mainnet = options.cardano_endpoint_mainnet
+    }
+
+    if (typeof(options.cardano_endpoint_testnet) !== 'undefined' && isValidHttpUrl(options.cardano_endpoint_testnet)) {
+        endpoint_testnet = options.cardano_endpoint_testnet
+    }
+
+    let response
+    
+    if (networkSelected == 0) {
+        response = await httpGet(`${endpoint_testnet}/${route}`, {
+            headers: {
+                'project_id' : options.blockfrost_id
+            }
+        })
+    } else {
+        response = await httpGet(`${endpoint_mainnet}/${route}`, {
+            headers: {
+                'project_id' : options.blockfrost_id
+            }
+        })
+    }
 
     return {
         code: response.code,
@@ -124,11 +146,22 @@ export const koiosRequest = async (route, options = {}) => {
     let networkSelected = network
     delete options.network
 
+    let endpoint_mainnet = `https://api.koios.rest/api/v0`
+    let endpoint_testnet = `https://testnet.koios.rest/api/v0`
+
+    if (typeof(options.cardano_endpoint_mainnet) !== 'undefined' && isValidHttpUrl(options.cardano_endpoint_mainnet)) {
+        endpoint_mainnet = options.cardano_endpoint_mainnet
+    }
+
+    if (typeof(options.cardano_endpoint_testnet) !== 'undefined' && isValidHttpUrl(options.cardano_endpoint_testnet)) {
+        endpoint_testnet = options.cardano_endpoint_testnet
+    }
+
     let response
     if (networkSelected == 0) {
-        response = await httpGet(`https://testnet.koios.rest/api/v0/${route}`, options)
+        response = await httpGet(`${endpoint_testnet}/${route}`, options)
     } else {
-        response = await httpGet(`https://api.koios.rest/api/v0/${route}`, options)
+        response = await httpGet(`${endpoint_mainnet}/${route}`, options)
     }
 
     return {
