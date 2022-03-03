@@ -34,6 +34,22 @@ export const getBlockfrostId = (options = {}) => {
     return options.blockfrost_id
 };
 
+export const getTangocryptoId = (options = {}) => {
+    if (typeof(options.tangocrypto_id) === 'undefined' || !options.tangocrypto_id) {
+        return null
+    }
+
+    return options.tangocrypto_id
+};
+
+export const getTangocryptoKey = (options = {}) => {
+    if (typeof(options.tangocrypto_key) === 'undefined' || !options.tangocrypto_key) {
+        return null
+    }
+
+    return options.tangocrypto_key
+};
+
 export const getCardanoRequestNetwork = (options = {}) => {
     if (typeof(options.network) === 'undefined' || options.network !== 0 || options.network === 1) {
         return 1

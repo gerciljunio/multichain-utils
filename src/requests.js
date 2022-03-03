@@ -11,7 +11,11 @@ import {
 
 import {
     timerWait,
-    isValidHttpUrl
+    isValidHttpUrl,
+    getBlockfrostId,
+    getTangocryptoId,
+    getTangocryptoKey,
+    getCardanoRequestNetwork
 } from './utils'
 
 import {
@@ -137,6 +141,52 @@ export const blockFrostRequest = async (route, options = {}) => {
 }
 
 /**
+ * Tangocrypto request
+ * @param {string} route 
+ * @param {object} options 
+ * @returns 
+ */
+export const tangoCryptoRequest = async (route, options = {}) => {    
+    let networkSelected = options.network === 0 ? 'testnet' : 'mainnet'
+    delete options.network
+
+    if (typeof(getTangocryptoId(options)) === 'undefined' || !getTangocryptoId(options)) {
+        throw 'tangocrypto_id not found'
+    }
+
+    let endpoint_mainnet = `https://cardano-mainnet.tangocrypto.com/${getTangocryptoId(options)}/v1`
+    let endpoint_testnet = `https://cardano-testnet.tangocrypto.com/${getTangocryptoId(options)}/v1`
+
+    if (typeof(options.cardano_endpoint_mainnet) !== 'undefined' && isValidHttpUrl(options.cardano_endpoint_mainnet)) {
+        endpoint_mainnet = options.cardano_endpoint_mainnet
+    }
+
+    if (typeof(options.cardano_endpoint_testnet) !== 'undefined' && isValidHttpUrl(options.cardano_endpoint_testnet)) {
+        endpoint_testnet = options.cardano_endpoint_testnet
+    }
+
+    let response
+    if (networkSelected == 0) {
+        response = await httpGet(`${endpoint_testnet}/${route}`, {
+            headers: {
+                'x-api-key' : getTangocryptoKey(options)
+            }
+        })
+    } else {
+        response = await httpGet(`${endpoint_mainnet}/${route}`, {
+            headers: {
+                'x-api-key' : getTangocryptoKey(options)
+            }
+        })
+    }
+
+    return {
+        code: response.code,
+        data: response.data[0] || response.data
+    }
+}
+
+/**
  * Koios request
  * @param {string} route 
  * @returns 
@@ -177,20 +227,43 @@ export const koiosRequest = async (route, options = {}) => {
  * @returns 
  */
 export const adaHandleRequest = async (handle, options = {}) => {
-    const { blockfrost_id = null, network = 1 } = options
-
+    // const { blockfrost_id = null, tangocrypto_id = null, network = 1 } = options
+    
     let response
-    if (!blockfrost_id) {
-        response = await koiosRequest(`asset_address_list?_asset_policy=${ADAHANDLE_POLICY[network]}&_asset_name=${handle}`, {
-            network: network
-        })
-        return response.data.payment_address
-    } else {
-        response = await blockFrostRequest(`assets/${ADAHANDLE_POLICY[network]}${handle}/addresses`, {
-            blockfrost_id: blockfrost_id,
-            network: network
+
+    // blockfrost
+    if (getBlockfrostId(options)) {
+        response = await blockFrostRequest(`assets/${ADAHANDLE_POLICY[getCardanoRequestNetwork(options)]}${handle}/addresses`, {
+            blockfrost_id: getBlockfrostId(options),
+            network: getCardanoRequestNetwork(options)
         })
         return response.data.address
+    
+    // tangocrypto
+    } else if (getTangocryptoId(options)) {
+        try {
+            response = await tangoCryptoRequest(`assets/${ADAHANDLE_POLICY[getCardanoRequestNetwork(options)]}${handle}/addresses`, {
+                tangocrypto_id: getTangocryptoId(options),
+                tangocrypto_key: getTangocryptoKey(options),
+                network: getCardanoRequestNetwork(options)
+            })
+            if (response.code == 404) {
+                throw ''
+            }
+            return response.data.address
+        } catch (error) {
+            response = await koiosRequest(`asset_address_list?_asset_policy=${ADAHANDLE_POLICY[getCardanoRequestNetwork(options)]}&_asset_name=${handle}`, {
+                network: getCardanoRequestNetwork(options)
+            })
+            return response.data.payment_address
+        }
+
+    // koios
+    } else {
+        response = await koiosRequest(`asset_address_list?_asset_policy=${ADAHANDLE_POLICY[getCardanoRequestNetwork(options)]}&_asset_name=${handle}`, {
+            network: getCardanoRequestNetwork(options)
+        })
+        return response.data.payment_address
     }
 }
 

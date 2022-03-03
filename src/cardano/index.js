@@ -13,6 +13,7 @@ import {
 import {
     koiosRequest,
     blockFrostRequest,
+    tangoCryptoRequest,
     adaHandleRequest,
     artAssetRequest,
     artRequest
@@ -20,8 +21,10 @@ import {
 
 import {
     getBlockfrostId,
+    getTangocryptoId,
     getCardanoRequestNetwork,
-    convertStringToHex
+    convertStringToHex,
+    getTangocryptoKey
 } from '../utils'
 
 /**
@@ -155,13 +158,13 @@ export const getAda = async (art, options = {}) => {
  */
 export const cardanoAccountInformation = async (address, options = {}) => {
     const {
-        blockfrost_id = null, network = 1, onlyStake = false
+        onlyStake = false
     } = options
 
     let remoteAddress
     if (!address.startsWith('addr') && !address.startsWith('addr_test') && !address.startsWith('stake')) {
         remoteAddress = await getAda(address, options)
-        if (remoteAddress.code == 200) {
+        if (remoteAddress.code == 200 && remoteAddress.data.startsWith('addr')) {
             address = remoteAddress.data
         }
     }
@@ -177,13 +180,16 @@ export const cardanoAccountInformation = async (address, options = {}) => {
 
     try {
         if (address.startsWith('addr')) {
-            if (!blockfrost_id) {
-                response = await koiosRequest(`address_info?_address=${address}`, {
-                    network: network
+
+            // blockfrost
+            if (getBlockfrostId(options)) {
+                response = await blockFrostRequest(`addresses/${address}`, {
+                    blockfrost_id: getBlockfrostId(options),
+                    network: getCardanoRequestNetwork(options)
                 })
                 let data = response.data
 
-                if (typeof (data.length) == "undefined" && typeof (data) == "object") {
+                if (response.code == 200) {
                     address = data.stake_address
                 } else {
                     return {
@@ -191,14 +197,33 @@ export const cardanoAccountInformation = async (address, options = {}) => {
                         data: MESSAGES.cardano.dataAccountNotFound
                     }
                 }
-            } else {
-                response = await blockFrostRequest(`addresses/${address}`, {
-                    blockfrost_id: blockfrost_id,
-                    network: network
+
+            // tangocrypto
+            } else if (getTangocryptoId(options)) {
+                response = await tangoCryptoRequest(`addresses/${address}`, {
+                    tangocrypto_id: getTangocryptoId(options),
+                    tangocrypto_key: getTangocryptoKey(options),
+                    network: getCardanoRequestNetwork(options)
                 })
                 let data = response.data
 
                 if (response.code == 200) {
+                    address = data.stake_address
+                } else {
+                    return {
+                        code: 404,
+                        data: MESSAGES.cardano.dataAccountNotFound
+                    }
+                }
+
+            // koios
+            } else {
+                response = await koiosRequest(`address_info?_address=${address}`, {
+                    network: getCardanoRequestNetwork(options)
+                })
+                let data = response.data
+
+                if (typeof (data.length) == "undefined" && typeof (data) == "object") {
                     address = data.stake_address
                 } else {
                     return {
@@ -216,31 +241,11 @@ export const cardanoAccountInformation = async (address, options = {}) => {
             }
         }
 
-        if (!blockfrost_id) {
-            response = await koiosRequest(`account_info?_address=${address}`, {
-                network: network
-            })
-            let data = response.data
-
-            if (typeof (data.length) == "undefined" && typeof (data) == "object") {
-                return {
-                    code: 200,
-                    data: {
-                        active: data.status == 'registered' ? true : false,
-                        stake_address: address,
-                        pool_id: data.delegated_pool,
-                        reserves: data.reserves,
-                        withdrawals: data.withdrawals,
-                        rewards: data.rewards,
-                        treasury: data.treasury,
-                        balance: data.total_balance
-                    }
-                }
-            }
-        } else {
+        // blockfrost
+        if (getBlockfrostId(options)) {
             response = await blockFrostRequest(`accounts/${address}`, {
-                blockfrost_id: blockfrost_id,
-                network: network
+                blockfrost_id: getBlockfrostId(options),
+                network: getCardanoRequestNetwork(options)
             })
             let data = response.data
 
@@ -256,6 +261,54 @@ export const cardanoAccountInformation = async (address, options = {}) => {
                         rewards: data.rewards_sum,
                         treasury: data.treasury_sum,
                         balance: data.controlled_amount
+                    }
+                }
+            }
+
+        // tangocrypto
+        } else if (getTangocryptoId(options)) {
+            response = await tangoCryptoRequest(`wallets/${address}`, {
+                tangocrypto_id: getTangocryptoId(options),
+                tangocrypto_key: getTangocryptoKey(options),
+                network: getCardanoRequestNetwork(options)
+            })
+            let data = response.data
+
+            if (response.code == 200) {
+                return {
+                    code: 200,
+                    data: {
+                        active: data.active,
+                        stake_address: address,
+                        pool_id: data.pool_id,
+                        reserves: data.reserves_sum,
+                        withdrawals: data.withdrawals_sum,
+                        rewards: data.rewards_sum,
+                        treasury: data.treasury_sum,
+                        balance: data.controlled_total_stake
+                    }
+                }
+            }
+
+        // koios
+        } else {
+            response = await koiosRequest(`account_info?_address=${address}`, {
+                network: getCardanoRequestNetwork(options)
+            })
+            let data = response.data
+
+            if (typeof (data.length) == "undefined" && typeof (data) == "object") {
+                return {
+                    code: 200,
+                    data: {
+                        active: data.status == 'registered' ? true : false,
+                        stake_address: address,
+                        pool_id: data.delegated_pool,
+                        reserves: data.reserves,
+                        withdrawals: data.withdrawals,
+                        rewards: data.rewards,
+                        treasury: data.treasury,
+                        balance: data.total_balance
                     }
                 }
             }
@@ -316,7 +369,6 @@ export const cardanoPoolIdByAddress = async (address, options = {}) => {
         }
     }
 
-
     try {
         response = await cardanoAccountInformation(address, options)
     } catch (error) {
@@ -347,7 +399,7 @@ export const cardanoPoolIdByAddress = async (address, options = {}) => {
  */
 export const cardanoPoolInfoByAddress = async (address, options = {}) => {
     const {
-        blockfrost_id = null, network = 1
+        network = 1
     } = options
 
     let response, data
@@ -362,9 +414,51 @@ export const cardanoPoolInfoByAddress = async (address, options = {}) => {
     }
 
     if (response.code == 200) {
-        if (!blockfrost_id) {
+        // blockfrost
+        if (getBlockfrostId(options)) {
+            response = await blockFrostRequest(`pools/${response.data}/metadata`, {
+                blockfrost_id: getBlockfrostId(options),
+                network: getCardanoRequestNetwork(options)
+            })
+            data = response.data
+
+            return {
+                code: 200,
+                data: {
+                    pool_id_bech32: data.pool_id || null,
+                    pool_id_hex: data.hex || null,
+                    homepage: data.homepage || null,
+                    name: data.name || null,
+                    description: data.description || null,
+                    ticker: data.ticker || null
+                }
+            }
+
+        // tangocrypto
+        } else if(getTangocryptoId(options)) {
+            response = await tangoCryptoRequest(`pools/${response.data}`, {
+                tangocrypto_id: getTangocryptoId(options),
+                tangocrypto_key: getTangocryptoKey(options),
+                network: getCardanoRequestNetwork(options)
+            })
+            data = response.data
+
+            return {
+                code: 200,
+                data: {
+                    pool_id_bech32: data.pool_id || null,
+                    pool_id_hex: data.id || null,
+                    homepage: data.homepage || null,
+                    name: data.name || null,
+                    description: data.description || null,
+                    ticker: data.ticker || null
+                }
+            }
+        
+        // koios
+        } else {
             response = await koiosRequest(`pool_info`, {
-                network: network,
+                network: getCardanoRequestNetwork(options),
                 body: {
                     _pool_bech32_ids: [
                         response.data
@@ -385,25 +479,6 @@ export const cardanoPoolInfoByAddress = async (address, options = {}) => {
                     ticker: data.meta_json.ticker || null,
                 }
             }
-
-        } else {
-            response = await blockFrostRequest(`pools/${response.data}/metadata`, {
-                blockfrost_id: blockfrost_id,
-                network: network
-            })
-            data = response.data
-
-            return {
-                code: 200,
-                data: {
-                    pool_id_bech32: data.pool_id || null,
-                    pool_id_hex: data.hex || null,
-                    homepage: data.homepage || null,
-                    name: data.name || null,
-                    description: data.description || null,
-                    ticker: data.ticker || null
-                }
-            }
         }
     }
 
@@ -419,68 +494,20 @@ export const cardanoPoolInfoByAddress = async (address, options = {}) => {
  * @returns 
  */
 export const cardanoLatestEpoch = async (options = {}) => {
-    const {
-        blockfrost_id = null, network = 1
-    } = options
-
     try {
-        if (!blockfrost_id) {
-            let tip = await koiosRequest(`tip`, {
-                network: network,
-            })
-            let epoch = await koiosRequest(`epoch_info?_epoch_no=${tip.data.epoch}`, {
-                network: network,
-            })
-            let parameters = await koiosRequest(`epoch_params?_epoch_no=${tip.data.epoch}`, {
-                network: network,
-            })
-
-            epoch = epoch.data
-            parameters = parameters.data
-
-            return {
-                code: 200,
-                data: {
-                    epoch: epoch.epoch_no,
-                    first_block_time: new Date(epoch.first_block_time).getTime(),
-                    last_block_time: new Date(epoch.last_block_time).getTime(),
-                    block_count: epoch.blk_count,
-                    tx_count: epoch.tx_count,
-                    output: epoch.out_sum,
-                    fees: epoch.fees,
-                    active_stake: epoch.active_stake,
-                    parameters: {
-                        from_origin_request: parameters,
-                        to_transaction: {
-                            linearFee: {
-                                minFeeA: parameters.min_fee_a.toString(),
-                                minFeeB: parameters.min_fee_b.toString(),
-                            },
-                            minUtxo: parameters.min_utxo_value.toString(),
-                            poolDeposit: parameters.pool_deposit.toString(),
-                            keyDeposit: parameters.key_deposit.toString(),
-                            coinsPerUtxoWord: parameters.coins_per_utxo_word.toString(),
-                            maxValSize: parameters.max_val_size.toString(),
-                            priceMem: parameters.price_mem,
-                            priceStep: parameters.price_step,
-                            maxTxSize: parseInt(parameters.max_tx_size),
-                            slot: parseInt(tip.data.abs_slot),
-                        }
-                    }
-                }
-            }
-        } else {
+        // blockfrost
+        if (getBlockfrostId(options)) {
             let epoch = await blockFrostRequest(`epochs/latest`, {
-                blockfrost_id: blockfrost_id,
-                network: network
+                blockfrost_id: getBlockfrostId(options),
+                network: getCardanoRequestNetwork(options)
             })
             let block = await blockFrostRequest(`blocks/latest`, {
-                blockfrost_id: blockfrost_id,
-                network: network
+                blockfrost_id: getBlockfrostId(options),
+                network: getCardanoRequestNetwork(options)
             })
             let parameters = await blockFrostRequest(`epochs/latest/parameters`, {
-                blockfrost_id: blockfrost_id,
-                network: network
+                blockfrost_id: getBlockfrostId(options),
+                network: getCardanoRequestNetwork(options)
             })
 
             epoch = epoch.data
@@ -514,6 +541,100 @@ export const cardanoLatestEpoch = async (options = {}) => {
                             priceStep: parameters.price_step,
                             maxTxSize: parseInt(parameters.max_tx_size),
                             slot: parseInt(block.slot),
+                        }
+                    }
+                }
+            }
+
+        // tangocrypto
+        } else if (getTangocryptoId(options)) {
+            let block = await tangoCryptoRequest(`blocks/latest`, {
+                tangocrypto_id: getTangocryptoId(options),
+                tangocrypto_key: getTangocryptoKey(options),
+                network: getCardanoRequestNetwork(options)
+            })
+            let parameters = await tangoCryptoRequest(`epochs/${block.data.epoch_no}/parameters`, {
+                tangocrypto_id: getTangocryptoId(options),
+                tangocrypto_key: getTangocryptoKey(options),
+                network: getCardanoRequestNetwork(options)
+            })
+
+            block = block.data
+            parameters = parameters.data
+
+            return {
+                code: 200,
+                data: {
+                    epoch: parameters.epoch_no,
+                    first_block_time: null,
+                    last_block_time: null,
+                    block_count: null,
+                    tx_count: null,
+                    output: null,
+                    fees: null,
+                    active_stake: null,
+                    parameters: {
+                        from_origin_request: parameters,
+                        to_transaction: {
+                            linearFee: {
+                                minFeeA: parameters.min_fee_a.toString(),
+                                minFeeB: parameters.min_fee_b.toString(),
+                            },
+                            minUtxo: parameters.min_utxo || '1000000',
+                            poolDeposit: parameters.pool_deposit,
+                            keyDeposit: parameters.key_deposit,
+                            coinsPerUtxoWord: null,
+                            maxValSize: null,
+                            priceMem: null,
+                            priceStep: null,
+                            maxTxSize: parseInt(parameters.max_tx_size),
+                            slot: parseInt(block.slot_no),
+                        }
+                    }
+                }
+            }
+        // koios
+        } else {
+            let tip = await koiosRequest(`tip`, {
+                network: getCardanoRequestNetwork(options),
+            })
+            let epoch = await koiosRequest(`epoch_info?_epoch_no=${tip.data.epoch}`, {
+                network: getCardanoRequestNetwork(options),
+            })
+            let parameters = await koiosRequest(`epoch_params?_epoch_no=${tip.data.epoch}`, {
+                network: getCardanoRequestNetwork(options),
+            })
+
+            epoch = epoch.data
+            parameters = parameters.data
+
+            return {
+                code: 200,
+                data: {
+                    epoch: epoch.epoch_no,
+                    first_block_time: new Date(epoch.first_block_time).getTime(),
+                    last_block_time: new Date(epoch.last_block_time).getTime(),
+                    block_count: epoch.blk_count,
+                    tx_count: epoch.tx_count,
+                    output: epoch.out_sum,
+                    fees: epoch.fees,
+                    active_stake: epoch.active_stake,
+                    parameters: {
+                        from_origin_request: parameters,
+                        to_transaction: {
+                            linearFee: {
+                                minFeeA: parameters.min_fee_a.toString(),
+                                minFeeB: parameters.min_fee_b.toString(),
+                            },
+                            minUtxo: parameters.min_utxo_value.toString(),
+                            poolDeposit: parameters.pool_deposit.toString(),
+                            keyDeposit: parameters.key_deposit.toString(),
+                            coinsPerUtxoWord: parameters.coins_per_utxo_word.toString(),
+                            maxValSize: parameters.max_val_size.toString(),
+                            priceMem: parameters.price_mem,
+                            priceStep: parameters.price_step,
+                            maxTxSize: parseInt(parameters.max_tx_size),
+                            slot: parseInt(tip.data.abs_slot),
                         }
                     }
                 }
@@ -558,32 +679,8 @@ export const cardanoAssetInfoByUnit = async (unit, options = {}) => {
     let asset_policy = unit.slice(0, 56)
     let asset_name = unit.slice(56)
 
-    if (!getBlockfrostId(options)) {
-        response = await koiosRequest(`asset_info?_asset_policy=${asset_policy}&_asset_name=${asset_name}`, {
-            network: getCardanoRequestNetwork(options),
-        })
-
-        if (response.code != 200 || response.length <= 0 || typeof (response.data.policy_id) === "undefined") {
-            return {
-                code: 404,
-                data: MESSAGES.cardano.assetNotFound
-            }
-        }
-
-        let data = response.data
-
-        return {
-            code: 200,
-            data: {
-                unit: data.policy_id + data.asset_name,
-                policy_id: data.policy_id,
-                asset_name: data.asset_name,
-                fingerprint: data.fingerprint,
-                quantity: data.total_supply,
-                metadata: data.token_registry_metadata || data.minting_tx_metadata['json'] || null
-            }
-        }
-    } else {
+    // blockfrost
+    if (getBlockfrostId(options)) {
         response = await blockFrostRequest(`assets/${unit}`, {
             blockfrost_id: getBlockfrostId(options),
             network: getCardanoRequestNetwork(options)
@@ -609,6 +706,62 @@ export const cardanoAssetInfoByUnit = async (unit, options = {}) => {
                 metadata: data.metadata || data.onchain_metadata || null
             }
         }
+
+    // tangocrypto
+    } else if(getTangocryptoId(options)) {
+        response = await tangoCryptoRequest(`assets/${unit}`, {
+            tangocrypto_id: getTangocryptoId(options),
+            tangocrypto_key: getTangocryptoKey(options),
+            network: getCardanoRequestNetwork(options)
+        })
+
+        if (response.code != 200) {
+            return {
+                code: 404,
+                data: MESSAGES.cardano.assetNotFound
+            }
+        }
+
+        let data = response.data
+
+        return {
+            code: 200,
+            data: {
+                unit: data.policy_id + data.asset_name,
+                policy_id: data.policy_id,
+                asset_name: data.asset_name,
+                fingerprint: data.fingerprint,
+                quantity: data.quantity,
+                metadata: data.metadata || data.onchain_metadata || null
+            }
+        }
+
+    // koios
+    } else {
+        response = await koiosRequest(`asset_info?_asset_policy=${asset_policy}&_asset_name=${asset_name}`, {
+            network: getCardanoRequestNetwork(options),
+        })
+
+        if (response.code != 200 || response.length <= 0 || typeof (response.data.policy_id) === "undefined") {
+            return {
+                code: 404,
+                data: MESSAGES.cardano.assetNotFound
+            }
+        }
+
+        let data = response.data
+
+        return {
+            code: 200,
+            data: {
+                unit: data.policy_id + data.asset_name,
+                policy_id: data.policy_id,
+                asset_name: data.asset_name,
+                fingerprint: data.fingerprint,
+                quantity: data.total_supply,
+                metadata: data.token_registry_metadata || data.minting_tx_metadata['json'] || null
+            }
+        }
     }
 }
 
@@ -621,7 +774,25 @@ export const cardanoAssetInfoByUnit = async (unit, options = {}) => {
 export const cardanoTx = async (tx, options = {}) => {
     let response, data
 
-    if (!getBlockfrostId(options)) {
+    // blockfrost
+    if (getBlockfrostId(options)) {
+        response = await blockFrostRequest(`txs/${tx}`, {
+            blockfrost_id: getBlockfrostId(options),
+            network: getCardanoRequestNetwork(options)
+        })
+        data = response.data
+
+    // tangocrypto
+    } else if (getTangocryptoId(options)) {
+        response = await tangoCryptoRequest(`transactions/${tx}`, {
+            tangocrypto_id: getTangocryptoId(options),
+            tangocrypto_key: getTangocryptoKey(options),
+            network: getCardanoRequestNetwork(options)
+        })
+        data = response.data
+
+    // koios    
+    } else {
         response = await koiosRequest(`tx_info`, {
             network: getCardanoRequestNetwork(options),
             body: {
@@ -630,12 +801,6 @@ export const cardanoTx = async (tx, options = {}) => {
                 ]
             },
             method: 'POST'
-        })
-        data = response.data
-    } else {
-        response = await blockFrostRequest(`txs/${tx}`, {
-            blockfrost_id: getBlockfrostId(options),
-            network: getCardanoRequestNetwork(options)
         })
         data = response.data
     }
@@ -650,6 +815,7 @@ export const cardanoTx = async (tx, options = {}) => {
     return {
         code: 200,
         data: {
+            tx: tx,
             info: data,
             explorers: {
                 cardano: CARDANO_EXPLORER[getCardanoRequestNetwork(options)] + tx,
@@ -708,6 +874,7 @@ export const cardanoVerifyTxCreatedEvery = async (tx, options = {}) => {
                     code: transaction.code,
                     data: transaction.code == 200 ? {
                         created: transaction.code == 200 ? true : false,
+                        tx: tx,
                         info: transaction.code == 200 ? transaction.data.info : null,
                         explorers: transaction.code == 200 ? transaction.data.explorers : null,
                     } : null

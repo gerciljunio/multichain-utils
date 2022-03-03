@@ -33,6 +33,7 @@ export const ethereumTx = async (tx, options = {}) => {
     return {
         code: 200,
         data: {
+            tx: tx,
             info: transaction.data.result,
             explorers: {
                 etherscan: ETHEREUM_EXPLORER[0] + tx,
