@@ -147,7 +147,6 @@ export const blockFrostRequest = async (route, options = {}) => {
  * @returns 
  */
 export const tangoCryptoRequest = async (route, options = {}) => {
-    console.log('to requisitando...')
     let networkSelected = options.network === 0 ? 'testnet' : 'mainnet'
     delete options.network
 
@@ -180,8 +179,6 @@ export const tangoCryptoRequest = async (route, options = {}) => {
             }
         })
     }
-
-    console.log('ja requisitei...', response)
 
     return {
         code: response.code,
