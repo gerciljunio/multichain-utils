@@ -1,6 +1,6 @@
 export const CARDANO_WALLETS = [
     "nami",
-    "gero",
+    "gerowallet",
     "flint",
     "typhon",
     "ccvault",
