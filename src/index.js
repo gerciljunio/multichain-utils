@@ -215,21 +215,30 @@ export const getIpfsUrl = async (art, options = {}) => {
 }
 
 /**
- * Get Resolvers supported by Adanize Resolver Tool (ART)
- * @param {object} options
- * @returns object
- */
-export const getAdanizeResolvers = async (options = {}) => {
-    return await artRequest('?art-action=resolvers', options)
-}
-
-/**
  * Get all Adanize Domains
  * @param {object} options
  * @returns object
  */
-export const getAdanizeDomains = async (options = {}) => {
+ export const getAdanizeDomains = async (options = {}) => {
     return await artRequest('', options)
+}
+
+/**
+ * Alias for getAdanizeDomains()
+ * @param {object} options
+ * @returns object
+ */
+export const getAdanizeResolvers = async (options = {}) => {
+    return await getAdanizeDomains(options)
+}
+
+/**
+ * Get data to resolver, from domain
+ * @param {object} options
+ * @returns object
+ */
+export const getAdanizeResolverDataFromDomain = async (domain, options = {}) => {
+    return await artRequest(`?art-domain=${domain}`, options)
 }
 
 /**
