@@ -15,7 +15,8 @@ import {
     getBlockfrostId,
     getTangocryptoId,
     getTangocryptoKey,
-    getCardanoRequestNetwork
+    getCardanoRequestNetwork,
+    objectIsArray
 } from './utils'
 
 import {
@@ -214,9 +215,19 @@ export const koiosRequest = async (route, options = {}) => {
         response = await httpGet(`${endpoint_mainnet}/${route}`, options)
     }
 
+    let data
+
+    if (objectIsArray(response.data) && response.data.length == 1) {
+        data = response.data[0]
+    } else if (objectIsArray(response.data) && response.data.length > 1) {
+        data = response.data
+    } else {
+        data = [ response.data ]
+    }
+
     return {
         code: response.code,
-        data: response.data[0] || response.data
+        data: data
     }
 }
 

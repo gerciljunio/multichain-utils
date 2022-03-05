@@ -62,6 +62,14 @@ export const convertStringToHex = (string) => {
     return Buffer.from(string).toString('hex')
 };
 
+export const objectIsArray = (object) => {
+    return (Object.prototype.toString.call(object) === '[object Array]')
+};
+
+export const objectIsGenuine = (object) => {
+    return (Object.prototype.toString.call(object) === '[object Object]')
+};
+
 export const isValidHttpUrl = (string) => {
     let url;
 
