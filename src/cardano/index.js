@@ -598,7 +598,7 @@ export const cardanoLatestEpoch = async (options = {}) => {
             let tip = await koiosRequest(`tip`, {
                 network: getCardanoRequestNetwork(options),
             })
-            
+
             let epoch = await koiosRequest(`epoch_info?_epoch_no=${tip.data.epoch_no}`, {
                 network: getCardanoRequestNetwork(options),
             })
