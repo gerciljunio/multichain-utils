@@ -80,7 +80,7 @@ export const MESSAGES = {
         poolNotFound: 'Stake Pool not found for this address.',
         epochError: 'There was a problem returning the epoch data, please check that you are entering the correct data.',
         assetNotFound: 'Asset not found.',
-        onlyCardanoForNow: 'For now, support only for Cardano wallets: nami, gero, flint, ccvault, typhon, cardwallet, yoroi',
+        onlyCardanoForNow: 'For now, support only for Cardano wallets: nami, gerowallet, flint, ccvault, typhon, cardwallet, yoroi',
         onlyGlobalCardanoForNow: 'For now, support only for Cardano.',
     }
 }

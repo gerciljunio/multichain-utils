@@ -806,6 +806,13 @@ export const cardanoTx = async (tx, options = {}) => {
         data = response.data
     }
 
+    if (typeof(response.data[0]) !== 'undefined') {
+        return {
+            code: 404,
+            data: 'Transaction not found.'
+        }
+    }
+
     if (typeof (response.data) !== "object" || (typeof (response.data) === "object" && response.data.length <= 0)) {
         return {
             code: 404,
@@ -862,12 +869,12 @@ export const cardanoVerifyTxCreatedEvery = async (tx, options = {}) => {
 
     let nowTries = 0
     return new Promise(async (resolve) => {
-        let transaction = await cardanoTx(tx, options)
-
         if (!tries) tries = 45
 
         const interval = setInterval(async () => {
             nowTries++
+
+            let transaction = await cardanoTx(tx, options)
 
             if (transaction.code == 200 || nowTries >= tries) {
                 clearInterval(interval)
@@ -882,7 +889,8 @@ export const cardanoVerifyTxCreatedEvery = async (tx, options = {}) => {
                 })
             }
 
-        }, transaction.code == 200 ? 1 : seconds * 1000)
+        }, seconds * 1000)
+
     })
 }
 
