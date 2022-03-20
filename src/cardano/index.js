@@ -54,7 +54,7 @@ export const cardanoAddressFromAdaHandle = async (handle, options = {}) => {
         };
     }
 
-    if (handle.startsWith('$')) {
+    if (handle.startsWith('$') && handle.length > 1) {
         try {
             let asset = convertStringToHex(handle.slice(1))
             let response = await adaHandleRequest(asset, options)
@@ -142,7 +142,7 @@ export const getAda = async (art, options = {}) => {
     }
 
     // If starting with $ is a handle 
-    if (art.startsWith('$')) {
+    if (art.startsWith('$') && art.length > 1) {
         return await cardanoAddressFromAdaHandle(art, options)
     }
 
