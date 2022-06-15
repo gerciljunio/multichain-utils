@@ -5,6 +5,7 @@ export const CARDANO_WALLETS = [
     "typhon",
     "ccvault",
     "cardwallet",
+    "nufi",
     "yoroi",
 ]
 
@@ -80,7 +81,7 @@ export const MESSAGES = {
         poolNotFound: 'Stake Pool not found for this address.',
         epochError: 'There was a problem returning the epoch data, please check that you are entering the correct data.',
         assetNotFound: 'Asset not found.',
-        onlyCardanoForNow: 'For now, support only for Cardano wallets: nami, gerowallet, flint, ccvault, typhon, cardwallet, yoroi',
+        onlyCardanoForNow: 'For now, support only for Cardano wallets: nami, gerowallet, flint, ccvault, typhon, nufi, yoroi',
         onlyGlobalCardanoForNow: 'For now, support only for Cardano.',
     }
 }
